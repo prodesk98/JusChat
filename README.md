@@ -1,1 +1,1 @@
-# chat-GraphRAG-langchain
+# Chat PDF GraphRAG with Langchain + Neo4j + Bedrock

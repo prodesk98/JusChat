@@ -1,0 +1,11 @@
+services:
+  neo4j:
+    image: neo4j:2025.06.0
+    ports:
+      - "7474:7474"   # Port HTTP (browser)
+      - "7687:7687"   # Port Bolt (driver)
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_PLUGINS=["apoc"]
+    volumes:
+      - ./neo4j/data:/data
