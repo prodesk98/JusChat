@@ -9,3 +9,13 @@ services:
       - NEO4J_PLUGINS=["apoc"]
     volumes:
       - ./neo4j/data:/data
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    command: celery -A workers.tasks worker --loglevel=INFO
+    volumes:
+      - ./:/app
