@@ -1,18 +1,20 @@
-from config import env
-from celery import Celery
+from .connection import app
 
-broker_transport_options = {
-    'region': env.AWS_REGION,
-    'visibility_timeout': 3600,  # 1 hour
-    'polling_interval': 5,  # seconds
-    'predefined_queues': {
-        'default': {
-            'url': env.SQS_DEFAULT_QUEUE_URL,
-        }
-    },
-}
-app = Celery("tasks")
 
-app.conf.broker_url = env.SQS_BROKER_URL
-app.conf.broker_transport_options = broker_transport_options
-app.conf.task_default_queue = 'default'
+@app.task(
+    name="knowledge.update_knowledge_base",
+    bind=True,
+    autoretry_for=(Exception,),
+    max_retries=3,
+    countdown=60,
+)
+def update_knowledge_base(self, key: str):
+    """
+    Update the knowledge base with the given ID.
+    """
+    from .knowledge import KnowledgeService
+    try:
+        service = KnowledgeService()
+        service.update(key)
+    except Exception as e:
+        self.retry(exc=e)

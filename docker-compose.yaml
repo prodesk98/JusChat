@@ -16,6 +16,8 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
+    environment:
+      NEO4J_URL: bolt://neo4j:7687
     command: celery -A workers.tasks worker --loglevel=INFO
     volumes:
       - ./:/app
