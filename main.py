@@ -20,7 +20,7 @@ async def chat(chat_id: str, data: AgentGraphRAGRequest) -> AgentGraphRAGRespons
     :return: A response containing the processed message.
     """
     agent = AgentGraphRAGBedRock(chat_id)
-    response = await agent.agenerate(data.answer)
+    response = await agent.generate(data.answer)
     return AgentGraphRAGResponse(response=response)
 
 

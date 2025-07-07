@@ -1,4 +1,4 @@
-from .api_rest import (
+from .api_rest_schema import (
     KnowledgeUploadSchema,
     KnowledgeUpdateResponse,
     AgentGraphRAGResponse,
