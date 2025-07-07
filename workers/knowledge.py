@@ -1,5 +1,4 @@
-from langchain_community.document_loaders import S3FileLoader
-from langchain_community.document_loaders import AmazonTextractPDFLoader
+from langchain_community.document_loaders import S3FileLoader, AmazonTextractPDFLoader
 from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_core.documents import Document
@@ -27,14 +26,14 @@ class KnowledgeService:
             )
             return "\n".join([page.page_content for page in loader.load()])
         elif _ext == 'txt' or _ext == 'md':
-            s3_file_loader = S3FileLoader(
+            loader = S3FileLoader(
                 env.S3_BUCKET_NAME,
                 key=key,
                 region_name=env.AWS_REGION,
                 aws_access_key_id=env.AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=env.AWS_SECRET_ACCESS_KEY,
             )
-            return "\n".join([page.page_content for page in s3_file_loader.load()])
+            return "\n".join([page.page_content for page in loader.load()])
         raise RuntimeError(f"Unsupported file type: {_ext}")
 
     def update(self, key: str):

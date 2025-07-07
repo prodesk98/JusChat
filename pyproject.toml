@@ -7,6 +7,7 @@ dependencies = [
     "amazon-textract-caller>=0.2.4",
     "amazon-textract-textractor>=1.9.2",
     "celery[sqs]>=5.5.3",
+    "fastapi[standard]>=0.115.14",
     "langchain>=0.3.26",
     "langchain-aws>=0.2.27",
     "langchain-community>=0.3.27",

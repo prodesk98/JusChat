@@ -21,3 +21,15 @@ services:
     command: celery -A workers.tasks worker --loglevel=INFO
     volumes:
       - ./:/app
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      NEO4J_URL: bolt://neo4j:7687
+    ports:
+      - "8000:8000"
+    command: fastapi dev main.py --host 0.0.0.0 --port 8000
