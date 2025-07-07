@@ -8,7 +8,18 @@ services:
       - NEO4J_AUTH=neo4j/password
       - NEO4J_PLUGINS=["apoc"]
     volumes:
-      - ./neo4j/data:/data
+      - neo4j-data:/data
+
+  mongo:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: pwd
+      MONGO_INITDB_DATABASE: db0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
 
   worker:
     build:
@@ -30,6 +41,13 @@ services:
       - .env
     environment:
       NEO4J_URL: bolt://neo4j:7687
+      MONGO_URI: mongodb://root:pwd@mongo:27017/?authSource=admin
     ports:
       - "8000:8000"
     command: fastapi dev main.py --host 0.0.0.0 --port 8000
+    volumes:
+      - ./:/app
+
+volumes:
+  neo4j-data:
+  mongodb-data:

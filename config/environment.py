@@ -12,7 +12,7 @@ class Environment(BaseSettings):
     # Secret key
     AWS_SECRET_ACCESS_KEY: Optional[str] = Field(default=os.getenv("AWS_SECRET_ACCESS_KEY"))
     # Region
-    AWS_REGION: str = Field(default=os.getenv("AWS_REGION", "us-east-1"))
+    AWS_REGION: Optional[str] = Field(default=os.getenv("AWS_REGION", "us-east-1"))
     # SQS Broker URL
     SQS_BROKER_URL: Optional[str] = Field(
         default=f"sqs://{safequote(os.getenv("AWS_ACCESS_KEY_ID"))}:{safequote(os.getenv("AWS_SECRET_ACCESS_KEY"))}@")
@@ -26,3 +26,6 @@ class Environment(BaseSettings):
     # Bedrock
     BEDROCK_MODEL_ID: Optional[str] = Field(
         default=os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-3-5-sonnet-20240620-v1:0"))
+    # MongoDB
+    MONGO_URI: Optional[str] = Field(default=os.getenv("MONGO_URI", "mongodb://root:pwd@127.0.0.1:27017?authSource=admin"))
+    MONGO_DB_NAME: Optional[str] = Field(default=os.getenv("MONGO_DB_NAME", "db0"))
