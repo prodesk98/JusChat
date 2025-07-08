@@ -15,8 +15,8 @@ class KnowledgeUpdateResponse(BaseModel):
 
 
 class AgentGraphRAGRequest(BaseModel):
-    answer: str
+    question: str
 
 
 class AgentGraphRAGResponse(BaseModel):
-    response: str
+    result: str

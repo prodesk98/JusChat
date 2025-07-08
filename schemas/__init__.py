@@ -4,3 +4,4 @@ from .api_rest_schema import (
     AgentGraphRAGResponse,
     AgentGraphRAGRequest,
 )
+from .agent_schema import AgentGraphSubquery, AgentGraphRoute

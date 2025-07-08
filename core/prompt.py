@@ -15,28 +15,30 @@ Schema:
 {schema}
 
 The question is: 
-{question}""",
+{question}
+
+Cypher:""",
     input_variables=["schema", "question"],
 )
 
 QA_PROMPT = PromptTemplate(
-    template="""You are an assistant that helps to form clear and legally sound answers.
-The information part contains the provided legal information that you must use to construct an answer.
-The provided information is authoritative; you must never doubt it or try to use your internal knowledge to correct it.
-Make the answer sound as a direct response to the question. Do not mention that you based the result on the given information.
-Here is an example:
+    template="""Você é um assistente que ajuda a formular respostas claras e juridicamente corretas.
+A parte de informações contém os dados jurídicos fornecidos que você deve usar para construir a resposta.
+As informações fornecidas são autoritativas; você nunca deve duvidar delas ou tentar usar seu conhecimento interno para corrigir algo.
+A resposta deve soar como uma resposta direta à pergunta. Não mencione que se baseou nas informações fornecidas.
+Aqui está um exemplo:
 
-Question: Which lawyers represent the defendant?
-Context: [lawyer: JOHN DOE, lawyer: SMITH & PARTNERS LLP]
-Helpful Answer: JOHN DOE and SMITH & PARTNERS LLP represent the defendant.
+Pergunta: Quais advogados representam o réu?
+Contexto: [advogado: JOHN DOE, advogado: SMITH & PARTNERS LLP]
+Resposta Útil: JOHN DOE e SMITH & PARTNERS LLP representam o réu.
 
-Follow this example when generating answers.
-If the provided information is empty, say that you don't know the answer.
-Information:
+Siga este exemplo ao gerar respostas.
+Se as informações fornecidas estiverem vazias, diga que não sabe a resposta.
+Informações:
 {context}
 
-Question: {question}
-Helpful Answer:""",
+Pergunta: {question}
+Resposta Útil:""",
     input_variables=["question", "context"],
 )
 
@@ -58,14 +60,27 @@ Question to route:
     input_variables=["documents", "question"],
 )
 
-SUBQUERY_PROMPT = PromptTemplate(
-    template="""You are a legal assistant that breaks down a complex legal question into smaller, clear sub-questions.
+SUBQUERIES_PROMPT = PromptTemplate(
+    template="""You are a legal assistant that breaks down a complex legal question into smaller, clear, and specific sub-questions.
 Generate only sub-questions that help clarify or expand the main question into logical parts.
-Each sub-question must be unique and not repeat the same meaning as another.
-If the question is already simple and does not need to be broken down, return an empty list.
-Return the sub-questions as a JSON array under the key 'subquestions'. Do not add any explanation or extra text.
+Each sub-question must be unique and must not repeat the same meaning as another already generated.
+If the main question is already simple and does not need to be broken down, return an empty list.
+Do not add any explanations or extra text.
 
 Main legal question:
-{question}""",
-    input_variables=["question"],
+{question}
+
+Already generated sub-questions:
+{subqueries}""",
+    input_variables=["question", "subqueries"],
+)
+
+ASSISTANT_PROMPT = PromptTemplate(
+    template="""Você é um assistente jurídico responsável por fornecer respostas claras, objetivas e fundamentadas a perguntas legais.
+Utilize exclusivamente as informações do contexto fornecido para elaborar sua resposta.
+Caso o contexto esteja vazio ou não contenha detalhes suficientes, informe educadamente que não há informações suficientes para responder à pergunta.
+
+Informações disponíveis:
+{context}""",
+    input_variables=["context"],
 )
