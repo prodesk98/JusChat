@@ -1,0 +1,72 @@
+.chat-message.user {
+    animation: slideInRight 0.3s ease-out;
+}
+
+.chat-message.bot {
+    animation: slideInLeft 0.3s ease-out;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.file-drop-area {
+    border: 2px dashed #cbd5e1;
+    transition: all 0.3s;
+}
+
+.file-drop-area.active {
+    border-color: #1d4ed8;
+    background-color: #eff6ff;
+}
+
+.document-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.chat-container {
+    height: calc(100vh - 200px);
+}
+
+@media (max-width: 768px) {
+    .chat-container {
+        height: calc(100vh - 180px);
+    }
+}

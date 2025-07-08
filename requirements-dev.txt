@@ -1,0 +1,12 @@
+# Testing
+pytest==7.4.0
+pytest-cov==4.1.0
+httpx==0.24.1
+
+# Linting and formatting
+flake8==6.1.0
+black==23.7.0
+isort==5.12.0
+
+# FastAPI testing
+fastapi==0.103.1

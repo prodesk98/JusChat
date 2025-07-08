@@ -1,6 +1,54 @@
-# Chat PDF GraphRAG with Langchain + Neo4j + Bedrock
+# JusChat - Assistente Jurídico com GraphRAG
 
-This repository contains a Graph RAG (Retrieval-Augmented Generation) application that uses PDF documents as a knowledge source, with Neo4j as the graph database and AWS Bedrock for AI model access.
+JusChat é um assistente jurídico inteligente baseado em tecnologia GraphRAG (Graph Retrieval Augmented Generation) que utiliza processamento de linguagem natural e grafos de conhecimento para consulta e análise de documentos jurídicos brasileiros.
+
+## 📋 Sobre o Projeto
+
+JusChat foi desenvolvido para auxiliar profissionais do direito e interessados na área jurídica a consultar e analisar documentos legais de forma eficiente. O sistema utiliza uma abordagem avançada de RAG (Retrieval Augmented Generation) combinada com banco de dados em grafo para criar uma representação estruturada do conhecimento jurídico, permitindo consultas mais precisas e contextualizadas.
+
+O assistente é capaz de:
+- Processar documentos jurídicos (PDFs, TXTs, MDs)
+- Extrair entidades e relações jurídicas
+- Armazenar conhecimento em um grafo semântico
+- Responder perguntas complexas sobre processos e conceitos jurídicos
+- Fornecer respostas fundamentadas com base nos documentos analisados
+
+## 🛠️ Stack Tecnológica
+
+### Backend
+- **FastAPI**: Framework web para APIs
+- **LangChain**: Framework para aplicações baseadas em LLMs
+- **LangGraph**: Orquestração de fluxos de trabalho para agentes de IA
+- **Neo4j**: Banco de dados em grafo para armazenamento de conhecimento
+- **MongoDB**: Banco de dados para armazenamento de histórico de conversas
+- **Amazon Bedrock**: Serviço de LLM (Claude 3.5 Sonnet)
+- **Amazon S3**: Armazenamento de documentos
+- **Amazon SQS**: Fila de mensagens para processamento assíncrono
+- **Amazon Textract**: Extração de texto de documentos PDF
+
+### Frontend
+- **Jinja2**: Engine de templates
+- **TailwindCSS**: Framework CSS para estilização
+- **JavaScript**: Interatividade no frontend
+
+## ✨ Funcionalidades
+
+- **Upload de Documentos**: Carregue documentos jurídicos (PDF, TXT, MD) para alimentar a base de conhecimento
+- **Extração de Conhecimento**: Processamento automático de documentos para extrair entidades e relações jurídicas
+- **Consulta Conversacional**: Interface de chat para realizar perguntas sobre documentos jurídicos
+- **Busca Semântica**: Recuperação de informações baseada em significado, não apenas em palavras-chave
+- **Raciocínio em Grafo**: Utilização da estrutura de grafo para realizar inferências complexas
+- **Geração de Respostas Contextualizadas**: Respostas geradas com base no contexto jurídico brasileiro
+
+## 🧠 Arquitetura do GraphRAG
+
+O JusChat utiliza uma arquitetura GraphRAG que combina:
+
+1. **Ingestão de Documentos**: Processamento e divisão de documentos em chunks
+2. **Extração de Conhecimento**: Identificação de entidades jurídicas (pessoas, organizações, tribunais, etc.) e suas relações
+3. **Armazenamento em Grafo**: Persistência do conhecimento em um banco de dados Neo4j
+4. **Consulta e Raciocínio**: Workflow de busca, roteamento, geração de subconsultas e resposta final
+5. **Geração Aumentada**: Uso do LLM (Claude 3.5) para gerar respostas precisas com base no conhecimento recuperado
 
 ## Infrastructure as Code
 
@@ -54,16 +102,102 @@ To get started with either option, refer to the respective README files:
 - [Terraform README](terraform-README.md)
 - [CDK README](cdk/README.md)
 
-## Application Components
+## 🚀 Instalação e Configuração
 
-- **Neo4j**: Graph database for storing document knowledge graphs
-- **Langchain**: Framework for building applications with LLMs
-- **AWS Bedrock**: Managed service for foundation models
-- **Celery**: Distributed task queue for processing documents
-- **SQS**: Message broker for Celery tasks
-- **S3**: Storage for PDF and text documents
+### Pré-requisitos
+- Python 3.10+
+- Docker e Docker Compose (para Neo4j e MongoDB)
+- Conta AWS com acesso aos serviços Bedrock, S3, SQS e Textract
 
-## Notes
+### Configuração do Ambiente
 
-- The Neo4j database is not deployed by either Terraform or CDK. Instead, it's configured to run in Docker as shown in the `docker-compose.yaml` file.
-- Both infrastructure configurations create an IAM user with permissions to access S3, SQS, Bedrock, and Textract. You may want to restrict these permissions further in a production environment.
+1. Clone o repositório:
+```bash
+git clone https://github.com/seu-usuario/juschat.git
+cd juschat
+```
+
+2. Crie e ative um ambiente virtual:
+```bash
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# Linux/Mac
+source .venv/bin/activate
+```
+
+3. Instale as dependências:
+```bash
+pip install -e .
+```
+
+4. Configure as variáveis de ambiente:
+Copie o arquivo `template.env` para `.env` e preencha com suas credenciais:
+```bash
+cp template.env .env
+```
+
+5. Inicie os serviços com Docker Compose:
+```bash
+docker-compose up -d
+```
+
+## 🔧 Uso
+
+1. Inicie o servidor:
+```bash
+python main.py
+```
+
+2. Acesse a interface web em `http://localhost:8000`
+
+3. Faça upload de documentos jurídicos para alimentar a base de conhecimento
+
+4. Comece a fazer perguntas sobre os documentos carregados
+
+## 🧪 Testes
+
+O JusChat inclui testes unitários para garantir a qualidade e a estabilidade do código. Os testes são focados principalmente nas APIs FastAPI.
+
+### Executando os Testes
+
+Para executar os testes localmente:
+
+```bash
+# Instale as dependências de desenvolvimento
+pip install -r requirements-dev.txt
+
+# Execute os testes
+pytest tests/
+```
+
+Para executar os testes com cobertura:
+
+```bash
+pytest tests/ --cov=. --cov-report=term
+```
+
+### Estrutura de Testes
+
+- `tests/conftest.py`: Configuração e fixtures do pytest
+- `tests/test_api.py`: Testes para os endpoints da API FastAPI
+
+## 🔄 CI/CD
+
+O projeto utiliza GitHub Actions para integração contínua e entrega contínua. Os workflows estão configurados para:
+
+1. **Testes Automatizados**: Executa os testes unitários em cada push e pull request
+2. **Análise de Código**: Verifica a qualidade do código com linters como flake8, black e isort
+3. **Relatórios de Cobertura**: Gera relatórios de cobertura de código
+
+Os workflows estão definidos em `.github/workflows/python-tests.yml`.
+
+## ⚠️ Notas
+
+- O banco de dados Neo4j não é implantado pelo Terraform ou CDK. Em vez disso, ele é configurado para ser executado no Docker, conforme mostrado no arquivo `docker-compose.yaml`.
+- Ambas as configurações de infraestrutura criam um usuário IAM com permissões para acessar S3, SQS, Bedrock e Textract. Você pode querer restringir ainda mais essas permissões em um ambiente de produção.
+- Este sistema não substitui o aconselhamento jurídico profissional. As respostas geradas devem ser verificadas por profissionais qualificados.
+
+## 📄 Licença
+
+Este projeto está licenciado sob Creative Commons - veja o arquivo LICENSE para mais detalhes.

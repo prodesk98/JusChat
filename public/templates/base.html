@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./public/css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'legal-blue': '#1d4ed8',
+                        'legal-dark': '#0f172a',
+                        'legal-light': '#f1f5f9'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-legal-light">
+{% block content %}
+{% endblock %}
+<footer class="bg-white py-6 mt-8 border-t">
+    <div class="container mx-auto px-4 text-center text-gray-600">
+        <p>© 2025 JusChat Assistente Jurídico - Creative Commons</p>
+        <p class="text-sm mt-2">Este sistema não substitui o aconselhamento jurídico profissional</p>
+    </div>
+</footer>
+<script src="public/js/main.js"></script>
+</body>

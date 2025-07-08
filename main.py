@@ -1,4 +1,9 @@
-from fastapi import FastAPI, Depends
+import os
+
+from fastapi import FastAPI, Depends, Request
+from starlette.staticfiles import StaticFiles
+from starlette.templating import Jinja2Templates
+
 from schemas import (
     KnowledgeUploadSchema, KnowledgeUpdateResponse,
     AgentGraphRAGRequest, AgentGraphRAGResponse,
@@ -10,6 +15,20 @@ app = FastAPI(
     description="API for interacting with a chat system that utilizes a knowledge base.",
     version="1.0.0",
 )
+
+path__ = os.path.dirname(os.path.abspath(__file__))
+
+app.mount("/public", StaticFiles(directory="%s/public" % path__), name="static")
+templates = Jinja2Templates(directory="%s/public/templates" % path__)
+
+@app.get("/")
+async def root(request: Request):
+    """
+    Root endpoint that serves the main HTML page.
+    :return: The rendered HTML template.
+    """
+    return templates.TemplateResponse(request, "index.html", {})
+
 
 @app.post("/chat/{chat_id}", response_model=AgentGraphRAGResponse)
 async def chat(chat_id: str, data: AgentGraphRAGRequest) -> AgentGraphRAGResponse:
