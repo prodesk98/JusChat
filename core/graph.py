@@ -1,5 +1,4 @@
 from langchain_aws import ChatBedrock
-from langchain_core.messages import SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate
 from langchain_neo4j import Neo4jGraph, GraphCypherQAChain
 from neo4j.exceptions import CypherSyntaxError
