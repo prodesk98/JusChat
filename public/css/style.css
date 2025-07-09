@@ -6,10 +6,27 @@
     animation: slideInLeft 0.3s ease-out;
 }
 
+.active {
+    background-color: #f3f4f6;
+    border-color: #1d4ed8;
+}
+
 .tab-content {
     display: none;
 }
 
+.chat-container {
+    overflow-y: scroll;
+    max-height: 480px;
+    display: flex;
+    flex-direction: column;
+}
+
+footer {
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+}
 .tab-content.active {
     display: block;
     animation: fadeIn 0.3s ease-out;
@@ -28,6 +45,13 @@
 .document-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.text-danger {
+    color: #dc2626;
+}
+.text-success {
+    color: #16a34a;
 }
 
 @keyframes slideInRight {

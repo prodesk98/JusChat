@@ -1,0 +1,36 @@
+<!-- Documents Tab Content -->
+<div class="tab-content" id="documents-content">
+    <!-- Documents Header -->
+    <div class="bg-gray-50 px-6 py-4 border-b">
+        <h2 class="text-xl font-semibold text-gray-800">Gerenciamento de Documentos</h2>
+        <p class="text-gray-600 text-sm">Envie documentos para análise e armazenamento seguro</p>
+    </div>
+
+    <!-- Documents Content -->
+    <div class="p-6">
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold mb-4">Enviar Documentos</h3>
+            <div id="file-drop-area"
+                 class="file-drop-area rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition">
+                <i class="fas fa-cloud-upload-alt text-4xl text-legal-dark mb-3"></i>
+                <p class="font-medium text-gray-700">Arraste e solte seus documentos aqui</p>
+                <p class="text-gray-500 text-sm mt-1">Ou clique para selecionar arquivos</p>
+                <p class="text-gray-400 text-xs mt-3">Formatos suportados: PDF, TXT (até 8MB cada)</p>
+                <input type="file" id="file-input" class="hidden" multiple accept=".pdf,.txt,.md">
+            </div>
+            <div id="file-list" class="mt-4 hidden">
+                <h4 class="font-medium mb-2">Documentos selecionados:</h4>
+                <ul id="file-items" class="space-y-2"></ul>
+            </div>
+            <small id="document-uploaded-error" class="text-danger"></small>
+            <small id="document-uploaded-success" class="text-success"></small>
+        </div>
+
+        <div class="mb-6">
+            <button id="upload-btn"
+                    class="bg-legal-dark hover:bg-dark-700 text-white rounded-lg px-6 py-3 flex items-center transition w-full justify-center">
+                <i class="fas fa-upload mr-2"></i> Enviar Documentos para Análise
+            </button>
+        </div>
+    </div>
+</div>

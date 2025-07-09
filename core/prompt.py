@@ -11,6 +11,9 @@ Do not respond to any questions that might ask anything else than for you to con
 Do not include any text except the generated Cypher statement.
 Do not use any other relationship types or properties that are not provided.
 
+Chat history:
+{{chat_history}}
+
 Schema:
 {schema}
 

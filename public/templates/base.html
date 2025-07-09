@@ -6,29 +6,33 @@
     <title>{% block title %}{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <link rel="stylesheet" href="./public/css/style.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'legal-blue': '#1d4ed8',
-                        'legal-dark': '#0f172a',
-                        'legal-light': '#f1f5f9'
-                    }
-                }
-            }
-        }
-    </script>
 </head>
 <body class="bg-legal-light">
+<main class="container mx-auto px-4 py-8">
+<div class="bg-white rounded-xl shadow-xl overflow-hidden max-w-4xl mx-auto">
+<!-- Tab Navigation -->
+<div class="flex border-b border-gray-200">
+    <button id="chat-tab" class="tab-btn active py-4 px-6 font-medium text-lg flex items-center" style="border-right: 1px solid #dddddd;">
+        <i class="fas fa-comments mr-2"></i> Chat Jurídico
+    </button>
+    <button id="documents-tab" class="tab-btn py-4 px-6 font-medium text-lg flex items-center">
+        <i class="fas fa-file-upload mr-2"></i> Documentos
+    </button>
+</div>
 {% block content %}
 {% endblock %}
+</div>
+</main>
 <footer class="bg-white py-6 mt-8 border-t">
     <div class="container mx-auto px-4 text-center text-gray-600">
         <p>© 2025 JusChat Assistente Jurídico - Creative Commons</p>
         <p class="text-sm mt-2">Este sistema não substitui o aconselhamento jurídico profissional</p>
     </div>
 </footer>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script type="text/javascript" src="https://unpkg.com/showdown/dist/showdown.min.js"></script>
 <script src="public/js/main.js"></script>
 </body>

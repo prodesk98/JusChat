@@ -25,6 +25,9 @@ class GraphAgent(GraphNodesBase):
         documents: list[dict] = state["documents"]
         subqueries: list[dict] = state["subqueries"]
         depth: int = state["depth"]
+        cypher_prompt_copy = CYPHER_PROMPT.model_copy()
+        cypher_prompt_copy.template = cypher_prompt_copy.template.replace(
+            "{{chat_history}}", await self._chat_manager.get_history_as_string())
         # Search the graph using the LLM
         for query in subqueries:
             print(f"Processing query: {query}")
@@ -33,7 +36,7 @@ class GraphAgent(GraphNodesBase):
                     self._llm,
                     graph=self._graph,
                     qa_prompt=QA_PROMPT,
-                    cypher_prompt=CYPHER_PROMPT,
+                    cypher_prompt=cypher_prompt_copy,
                     verbose=True,
                     top_k=10,
                     allow_dangerous_requests=True,

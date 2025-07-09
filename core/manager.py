@@ -26,6 +26,14 @@ class ChatManager:
         """
         return await self._chat_manager_history.aget_messages()
 
+    async def get_history_as_string(self) -> str:
+        """
+        Retrieve the chat history as a single string.
+        :return: A string representation of the chat history.
+        """
+        messages = await self.get_history()
+        return "\n".join([f"{msg.type.capitalize()}: {msg.content}" for msg in messages])
+
     async def add_message(self, content: str, role: Literal["user", "agent"], **kwargs) -> None:
         """
         Add a message to the chat history.
