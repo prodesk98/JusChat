@@ -13,6 +13,18 @@ tailwind.config = {
 const socket = io();
 
 const markdownConverter = new showdown.Converter();
+
+function markdownToHtml(markdown) {
+    let content = markdownConverter.makeHtml(markdown);
+    // add style to li
+    content = content.replace(/<li>/g, '<li style="list-style: circle; margin-left: 1.5rem; padding-left: 0.5rem;">');
+    // add style to p
+    content = content.replace(/<p>/g, '<p style="padding: 5px;">');
+    // add style to ul
+    content = content.replace(/<ul>/g, '<ul style="margin-left: 1.5rem; padding-left: 0.5rem;">');
+    return content;
+}
+
 const uuid = () => {
     return crypto.randomUUID()
 }
@@ -240,7 +252,7 @@ if (messageInput && sendBtn && chatMessages) {
                 <div class="flex items-start justify-end" id="message-${id || uuid()}">
                     <div class="mr-3">
                         <div class="bg-legal-dark text-white rounded-xl p-4 shadow-sm max-w-3xl" id="${id || uuid()}">
-                            <p>${markdownConverter.makeHtml(text)}</p>
+                            <p>${markdownToHtml(text)}</p>
                         </div>
                     </div>
                     <div class="bg-gray-200 text-gray-800 rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0">
@@ -256,7 +268,7 @@ if (messageInput && sendBtn && chatMessages) {
                     </div>
                     <div class="ml-3">
                         <div class="bg-white rounded-xl p-4 shadow-sm max-w-3xl" id="${id || uuid()}">
-                            <p>${markdownConverter.makeHtml(text)}</p>
+                            <p>${markdownToHtml(text)}</p>
                         </div>
                     </div>
                 </div>
@@ -312,7 +324,7 @@ socket.on('agent_response', (data) => {
 socket.on('agent_updated', (data) => {
     const response = data.status || '';
     const messageContent = document.getElementById(storage.get("currentMessageId"));
-    if (messageContent) messageContent.innerHTML = markdownConverter.makeHtml(response);
+    if (messageContent) messageContent.innerHTML = markdownToHtml(response);
 });
 socket.on('error', (data) => {
     console.error('WebSocket error:', data.message);
