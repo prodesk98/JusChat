@@ -272,7 +272,6 @@ class KnowledgeService:
         :param key:
         :return:
         """
-        return # TODO: Implement this method
         # Load the document from S3
         contents = self._read(key)
         # Split the document into smaller chunks
