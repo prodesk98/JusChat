@@ -49,7 +49,7 @@ class AgentGraphRAGBedRock(LLMBedRockBase):
         :param state: The current state of the graph.
         :return: A string indicating the routing status.
         """
-        if state["depth"] >= 3:
+        if state["depth"] >= 1:
             return "answer_final"
         return state["route"]
 
