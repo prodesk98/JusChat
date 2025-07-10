@@ -43,7 +43,7 @@ class AgentGraphRAGBedRock(LLMBedRockBase):
         )
 
     @staticmethod
-    def check_status(state: GraphState) -> str:
+    def route_status(state: GraphState) -> str:
         """
         Determine the routing status based on the state of the graph.
         :param state: The current state of the graph.
@@ -53,29 +53,57 @@ class AgentGraphRAGBedRock(LLMBedRockBase):
             return "answer_final"
         return state["route"]
 
+    @staticmethod
+    def start_status(state: GraphState) -> str:
+        """
+        Start the agent and initialize the state.
+        :param state: The current state of the graph.
+        :return: The initial route for the agent.
+        """
+        return state["route"]
+
     async def invoke(self, question: str, **kwargs) -> str:
         workflow = StateGraph(GraphState) # type: ignore
-        workflow.add_node("Search", self._agent.search) # type: ignore
+        workflow.add_node("Start", self._agent.start) # type: ignore
         workflow.add_node("Route", self._agent.route) # type: ignore
+        workflow.add_node("SearchGraph", self._agent.search_graph) # type: ignore
+        workflow.add_node("SearchVector", self._agent.search_vector) # type: ignore
         workflow.add_node("Subqueries", self._agent.subqueries) # type: ignore
         workflow.add_node("Answer", self._agent.answer) # type: ignore
         # Edges
-        workflow.add_edge(START, "Search")
-        workflow.add_edge("Search", "Route")
-        workflow.add_edge("Subqueries", "Search")
+        workflow.add_edge(START, "Start")
+        workflow.add_edge("Subqueries", "Route")
+        workflow.add_edge("SearchGraph", "Route")
+        workflow.add_edge("SearchVector", "Route")
         workflow.add_edge("Answer", END)
         # Conditional
         workflow.add_conditional_edges(
-            "Route",
-            self.check_status,
+            "Start",
+            lambda x: x['route'],
             {
-                "generate_subqueries": "Subqueries",
+                "needs_search": "Subqueries",
+                "answer_final": "Answer",
+            }
+        )
+        workflow.add_conditional_edges(
+            "Route",
+            self.route_status,
+            {
+                "search_graph": "SearchGraph",
+                "search_vector": "SearchVector",
                 "answer_final": "Answer",
             }
         )
         # Compile the workflow
         app = workflow.compile()
         # Run the workflow
-        result = await app.ainvoke(
-            {"question": question, "documents": [], "subqueries": [question], "route": "", "depth": 0, "answer": "I don't know"}) # type: ignore
+        __initial_state = {
+            "question": question,
+            "documents": [],
+            "subqueries": [],
+            "route": "",
+            "depth": 0,
+            "answer": ""
+        }
+        result = await app.ainvoke(__initial_state) # type: ignore
         return result["answer"]

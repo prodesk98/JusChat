@@ -1,5 +1,13 @@
 from langchain.prompts import PromptTemplate
 
+ROUTING_CONSTANTS = {
+    "search_graph": "Consultando os relacionamentos do grafo",
+    "search_vector": "Consultando o contexto semântico",
+    "generate_subqueries": "Gerando novas sub-consultas",
+    "answer_final": "Concluído! Gerando resposta final",
+}
+
+
 CYPHER_PROMPT = PromptTemplate(
     template="""You are an expert at generating Cypher queries for Neo4j.
 Use the following schema to generate a Cypher query that answers the given question.
@@ -27,40 +35,67 @@ Cypher:""",
 )
 
 QA_PROMPT = PromptTemplate(
-    template="""Você é um assistente que ajuda a formular respostas claras e juridicamente corretas.
-A parte de informações contém os dados jurídicos fornecidos que você deve usar para construir a resposta.
-As informações fornecidas são autoritativas; você nunca deve duvidar delas ou tentar usar seu conhecimento interno para corrigir algo.
-A resposta deve soar como uma resposta direta à pergunta. Não mencione que se baseou nas informações fornecidas.
-Aqui está um exemplo:
+    template="""You are a legal evaluator.
 
-Pergunta: Quais advogados representam o réu?
-Contexto: [advogado: JOHN DOE, advogado: SMITH & PARTNERS LLP]
-Resposta Útil: JOHN DOE e SMITH & PARTNERS LLP representam o réu.
+Check if the answer is consistent with the question and the provided context only.
+Use no extra knowledge.
+Classify the answer as: 'Coherent Document', 'Incomplete Document', or 'Unrelated Document'.
 
-Siga este exemplo ao gerar respostas.
-Se as informações fornecidas estiverem vazias, diga que não sabe a resposta.
-Informações:
+Context:
 {context}
 
-Pergunta: {question}
-Resposta Útil:""",
+Question:
+{question}
+
+Classification:""",
     input_variables=["question", "context"],
+)
+
+START_PROMPT = PromptTemplate(
+    template="""You are a legal expert assistant.  
+Your task is to decide if the user’s legal question can be answered directly using existing knowledge or if it requires retrieving additional information from external sources.  
+
+You have two options:  
+1. **'needs_search'** — Use when the question requires checking documents, legal databases, or any additional context before answering.  
+2. **'answer_final'** — Use only if the question is clear and you already have enough information to answer without any further search.
+
+---
+
+**Rule:**  
+- Choose **'needs_search'** if any part of the question depends on specific legal details, facts, or context that must be looked up.  
+- Choose **'answer_final'** if the question can be answered confidently with general legal knowledge, definitions, or a simple statement.
+
+Return only **'needs_search'** or **'answer_final'**.
+
+---
+
+**Question:**  
+{question}""",
+    input_variables=["question"],
 )
 
 ROUTING_PROMPT = PromptTemplate(
     template="""You are a legal expert specializing in routing a user’s legal question to the most appropriate next action.
-You have two options:
-1. 'generate_subqueries': Use when the answer could benefit from generating additional sub-queries to refine or expand the legal information retrieved.
-2. 'answer_final': Use when the current answer is already correct and complete, and no more legal information is needed.
 
-Decide which option is most appropriate based on the nature of the legal question, the provided sub-queries, and the available documents.
-The value must be either 'generate_subqueries' or 'answer_final'.
-Before choosing 'generate_subqueries', ensure that new sub-queries do not duplicate existing ones or repeat the same intent.
+You have three options:
+1. **'search_graph'** — Use when the question requires structured, explicit relationships between legal entities, such as people, courts, or articles, or when the answer depends on navigating clear links in the knowledge graph.
+2. **'search_vector'** — Use when the question is open-ended, vague, uses synonyms or natural language, and would benefit from semantic similarity matching to find relevant context not directly connected in the graph.
+3. **'answer_final'** — Use only if the information is already complete and no further search is needed.
 
-Documents to consider:
+---
+
+**Rule:**
+
+* Prefer **'search_graph'** for specific, explicit relationships (e.g., *"Which articles relate to this law?"*, *"Who filed the appeal?"*).
+* Prefer **'search_vector'** for broad, general, or ambiguous questions (e.g., *"What does this concept mean?"*, *"Explain the context of this case."*).
+* Use **'answer_final'** only if the information is sufficient and no more search is required.
+
+---
+
+**Documents to consider:**
 {documents}
 
-Question to route:
+**Question to route:**
 {question}""",
     input_variables=["documents", "question"],
 )

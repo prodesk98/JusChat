@@ -5,11 +5,19 @@ from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTempla
 from langchain_neo4j import Neo4jGraph, GraphCypherQAChain
 from neo4j.exceptions import CypherSyntaxError
 
-from schemas import AgentGraphSubquery, AgentGraphRoute
+from schemas import AgentGraphSubquery, AgentGraphRoute, AgentGraphStart
 from server import SocketManager
 from .base import GraphNodesBase
 from .manager import ChatManager
-from .prompt import QA_PROMPT, CYPHER_PROMPT, SUBQUERIES_PROMPT, ROUTING_PROMPT, ASSISTANT_PROMPT
+from .prompt import (
+    QA_PROMPT,
+    CYPHER_PROMPT,
+    SUBQUERIES_PROMPT,
+    ROUTING_PROMPT,
+    ASSISTANT_PROMPT,
+    ROUTING_CONSTANTS,
+    START_PROMPT,
+)
 
 
 class GraphAgent(GraphNodesBase):
@@ -33,7 +41,31 @@ class GraphAgent(GraphNodesBase):
         """
         if self._sio: await self._sio.emit(event, data)
 
-    async def search(self, state: dict) -> dict:
+    async def start(self, state: dict) -> dict:
+        """
+        Start the agent and initialize the state.
+        :return: The initial state of the agent.
+        """
+        print("--STARTING AGENT--")
+        information_text = 'Iniciando o agente...'
+        await self._emit("agent_updated", {"status": information_text})
+        structured = self._llm.with_structured_output(AgentGraphStart)
+        route_chain = START_PROMPT | structured
+        result: AgentGraphStart = await route_chain.ainvoke(state)  # type: ignore
+        return {"route": result.route}
+
+    async def search_vector(self, state: dict) -> dict:
+        """
+        Search the vector database based on the current state and return a list of Document objects.
+        :param state:
+        :return:
+        """
+        print("--SEARCHING VECTOR--")
+        depth: int = state["depth"]
+        depth += 1
+        return {"documents": state["documents"], "depth": depth}
+
+    async def search_graph(self, state: dict) -> dict:
         """
         Search the graph based on the current state and return a list of Document objects.
         :param state:
@@ -87,8 +119,7 @@ class GraphAgent(GraphNodesBase):
         result: AgentGraphRoute = await route_chain.ainvoke(state) # type: ignore
         await self._emit(
             "agent_updated",
-             {"status": f"Roteamento concluído: {'Criar novas sub-consultas' 
-             if result.route == 'generate_subqueries' else 'Responder pergunta final'}"}
+             {"status": f"Roteamento: {ROUTING_CONSTANTS.get(result.route, 'Desconhecido')}"}
         )
         return {"route": result.route}
 

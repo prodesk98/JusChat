@@ -56,7 +56,25 @@ class LLMBedRockBase(LLMBase):
 
 class GraphNodesBase(ABC):
     @abstractmethod
-    async def search(self, state: dict) -> dict:
+    async def start(self, state: dict) -> dict:
+        """
+        Start the agent and initialize the state.
+        :param state: The current state of the graph.
+        :return: The initial state of the agent.
+        """
+        raise NotImplementedError("This method should be implemented in a subclass.")
+
+    @abstractmethod
+    async def search_vector(self, state: dict) -> dict:
+        """
+        Search the vector database based on the current state and return a list of Document objects.
+        :param state: The current state of the graph.
+        :return: A list of Document objects.
+        """
+        raise NotImplementedError("This method should be implemented in a subclass.")
+
+    @abstractmethod
+    async def search_graph(self, state: dict) -> dict:
         """
         Search the graph based on the current state and return a list of Document objects.
         :return: A list of Document objects.
@@ -78,6 +96,15 @@ class GraphNodesBase(ABC):
         Generate sub-queries based on the current state of the graph.
         :param state: The current state of the graph.
         :return: A list of sub-queries.
+        """
+        raise NotImplementedError("This method should be implemented in a subclass.")
+
+    @abstractmethod
+    async def answer(self, state: dict) -> dict:
+        """
+        Generate the final answer based on the current state of the graph.
+        :param state: The current state of the graph.
+        :return: The final answer as a string.
         """
         raise NotImplementedError("This method should be implemented in a subclass.")
 

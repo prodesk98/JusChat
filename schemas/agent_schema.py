@@ -12,9 +12,23 @@ class AgentGraphSubquery(BaseModel):
 
 
 class AgentGraphRoute(BaseModel):
-    route: Literal["generate_subqueries", "answer_final"] = Field(
+    route: Literal[
+        "search_graph",
+        "search_vector",
+        "answer_final"
+    ] = Field(
         default="",
         title="Route",
-        description="The route to take based on the sub-questions generated.",
+        description="Determines the next action for the agent based on the question and context."
     )
 
+
+class AgentGraphStart(BaseModel):
+    route: Literal[
+        "needs_search",
+        "answer_final"
+    ] = Field(
+        default="needs_search",
+        title="Route",
+        description="Determines if the question needs further search or can be answered directly."
+    )
