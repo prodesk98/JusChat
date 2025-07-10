@@ -53,15 +53,6 @@ class AgentGraphRAGBedRock(LLMBedRockBase):
             return "answer_final"
         return state["route"]
 
-    @staticmethod
-    def start_status(state: GraphState) -> str:
-        """
-        Start the agent and initialize the state.
-        :param state: The current state of the graph.
-        :return: The initial route for the agent.
-        """
-        return state["route"]
-
     async def invoke(self, question: str, **kwargs) -> str:
         workflow = StateGraph(GraphState) # type: ignore
         workflow.add_node("Start", self._agent.start) # type: ignore
@@ -90,7 +81,7 @@ class AgentGraphRAGBedRock(LLMBedRockBase):
             self.route_status,
             {
                 "search_graph": "SearchGraph",
-                "search_vector": "SearchVector",
+                "search_vector": "SearchGraph", # TODO: Implement vector search
                 "answer_final": "Answer",
             }
         )
