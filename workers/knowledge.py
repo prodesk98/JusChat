@@ -304,4 +304,7 @@ class KnowledgeService:
         graph.add_graph_documents(graph_documents, include_source=True)
         # Refresh the schema to ensure the new documents are indexed
         graph.refresh_schema()
+
+        # TODO: Implement vector database update logic here
+
         print(f"Knowledge base updated with {len(graph_documents)} documents from {key}.")

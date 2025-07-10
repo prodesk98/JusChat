@@ -60,6 +60,7 @@ class GraphAgent(GraphNodesBase):
         :param state:
         :return:
         """
+        # TODO: Implement the vector search logic
         print("--SEARCHING VECTOR--")
         depth: int = state["depth"]
         depth += 1
