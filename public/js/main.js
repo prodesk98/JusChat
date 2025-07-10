@@ -9,6 +9,8 @@ tailwind.config = {
         }
     }
 }
+// Socket.IO
+const socket = io();
 
 const markdownConverter = new showdown.Converter();
 const uuid = () => {
@@ -130,7 +132,7 @@ if (fileDropArea && fileInput && fileList && fileItems && uploadBtn) {
 
     uploadBtn.addEventListener('click', () => {
         if (fileInput.files.length > 0) {
-            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enviando...';
+            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
             uploadBtn.disabled = true;
 
             const formData = new FormData();
@@ -151,7 +153,7 @@ if (fileDropArea && fileInput && fileList && fileItems && uploadBtn) {
                 .then(response => response.json())
                 .then(data => {
                     console.log('Resposta do servidor:', data);
-                    uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i> Enviar Documentos para Análise';
+                    uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Enviar Documentos para Análise';
                     uploadBtn.disabled = false;
                     fileList.classList.add('hidden');
                     if (!data.success && alertError !== null) alertError.innerHTML = data.message;
@@ -159,7 +161,7 @@ if (fileDropArea && fileInput && fileList && fileItems && uploadBtn) {
                 })
                 .catch(error => {
                     console.error('Erro no envio:', error);
-                    uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i> Enviar Documentos para Análise';
+                    uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Enviar Documentos para Análise';
                     uploadBtn.disabled = false;
                     if (alertError !== null) alertError.innerHTML = JSON.stringify(error);
                 });
@@ -197,44 +199,28 @@ function toast(message, type = 'info') {
     }).showToast();
 }
 
-const socket = io();
-socket.on('history_updated', (data) => {
-    const history = data.history || [];
-    renderChatHistory(history);
-});
-socket.on('agent_response', (data) => {
-    const response = data.result || '';
-    addMessage(response, 'assistant');
-    messageInput.disabled = false;
-    messageInput.focus();
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-});
-socket.on('error', (data) => {
-    console.error('WebSocket error:', data.message);
-    toast(data.message, 'error');
-});
-socket.on('connect', () => {
-    console.log('Connected to WebSocket server');
-    socket.emit('chat_history', {chat_id: getChatId()});
-});
-socket.on('disconnect', () => {
-    console.log('Disconnected from WebSocket server');
-});
-
-function sendMessage() {
-    const message = messageInput.value.trim();
-    if (message) {
-        addMessage(message, 'user');
-        socket.emit('invoke_agent', {chat_id: getChatId(), question: message});
-        messageInput.value = '';
-        messageInput.disabled = true;
-    }
-}
-
 // Chat
 const messageInput = document.getElementById('message-input');
 const sendBtn = document.getElementById('send-btn');
 const chatMessages = document.getElementById('chat-messages');
+
+const defaultBtnText = sendBtn.innerHTML;
+const btnLoadingText = '<i class="fas fa-spinner fa-spin"></i>';
+
+function sendMessage() {
+    const message = messageInput.value.trim();
+    if (message) {
+        const messageId = uuid();
+        storage.set("currentMessageId", messageId);
+        addMessage(message, 'user');
+        addMessage('...', 'assistant', messageId);
+        socket.emit('invoke_agent', {chat_id: getChatId(), question: message});
+        messageInput.value = '';
+        messageInput.disabled = true;
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = btnLoadingText;
+    }
+}
 
 if (messageInput && sendBtn && chatMessages) {
 
@@ -245,15 +231,15 @@ if (messageInput && sendBtn && chatMessages) {
         return chatId;
     }
 
-    function addMessage(text, sender) {
+    function addMessage(text, sender, id = null) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${sender} mb-4`;
 
         messageDiv.innerHTML = sender === 'user' ?
             `
-                <div class="flex items-start justify-end">
+                <div class="flex items-start justify-end" id="message-${id || uuid()}">
                     <div class="mr-3">
-                        <div class="bg-legal-dark text-white rounded-xl p-4 shadow-sm max-w-3xl">
+                        <div class="bg-legal-dark text-white rounded-xl p-4 shadow-sm max-w-3xl" id="${id || uuid()}">
                             <p>${markdownConverter.makeHtml(text)}</p>
                         </div>
                     </div>
@@ -264,12 +250,12 @@ if (messageInput && sendBtn && chatMessages) {
                 `
             :
             `
-                <div class="flex items-start">
+                <div class="flex items-start" id="message-${id || uuid()}">
                     <div class="bg-legal-dark text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0">
                         <i class="fas fa-scale-balanced"></i>
                     </div>
                     <div class="ml-3">
-                        <div class="bg-white rounded-xl p-4 shadow-sm max-w-3xl">
+                        <div class="bg-white rounded-xl p-4 shadow-sm max-w-3xl" id="${id || uuid()}">
                             <p>${markdownConverter.makeHtml(text)}</p>
                         </div>
                     </div>
@@ -303,3 +289,41 @@ function newChat() {
     toast('Novo chat iniciado', 'success');
 }
 
+
+// WebSocket Events
+socket.on('history_updated', (data) => {
+    const history = data.history || [];
+    renderChatHistory(history);
+});
+socket.on('agent_response', (data) => {
+    const response = data.result || '';
+    addMessage(response, 'assistant');
+    messageInput.disabled = false;
+    sendBtn.disabled = false;
+    messageInput.focus();
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    sendBtn.innerHTML = defaultBtnText;
+    const message = document.getElementById(`message-${storage.get("currentMessageId")}`);
+    if (message) {
+        message.remove();
+        storage.remove('currentMessageId');
+    }
+});
+socket.on('agent_updated', (data) => {
+    const response = data.status || '';
+    const messageContent = document.getElementById(storage.get("currentMessageId"));
+    if (messageContent) messageContent.innerHTML = markdownConverter.makeHtml(response);
+});
+socket.on('error', (data) => {
+    console.error('WebSocket error:', data.message);
+    toast(data.message, 'error');
+});
+socket.on('connect', () => {
+    console.log('Connected to WebSocket server');
+    socket.emit('chat_history', {chat_id: getChatId()});
+});
+socket.on('disconnect', () => {
+    console.log('Disconnected from WebSocket server');
+});
+
+//

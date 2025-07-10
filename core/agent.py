@@ -5,6 +5,7 @@ from langchain_neo4j import Neo4jGraph
 from langgraph.constants import START, END
 from langgraph.graph import StateGraph
 
+from server import SocketManager
 from .base import LLMBedRockBase, GraphState
 from .graph import GraphAgent
 from .manager import ChatManager
@@ -15,6 +16,7 @@ class AgentGraphRAGBedRock(LLMBedRockBase):
     def __init__(
         self,
         chat_id: str,
+        sio: Optional[SocketManager] = None,
         model_id: Optional[str] = env.BEDROCK_MODEL_ID,
         region: Optional[str] = env.AWS_REGION,
         aws_access_key_id: Optional[str] = env.AWS_ACCESS_KEY_ID,
@@ -24,7 +26,7 @@ class AgentGraphRAGBedRock(LLMBedRockBase):
             model_id=model_id,
             region=region,
             aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key
+            aws_secret_access_key=aws_secret_access_key,
         )
         self._chat_manager = ChatManager(chat_id)
         self._chat_histories: list[BaseMessage] = []
@@ -36,7 +38,8 @@ class AgentGraphRAGBedRock(LLMBedRockBase):
         self._agent = GraphAgent(
             graph=self._graph,
             llm=self._llm,
-            chat_manager=self._chat_manager
+            chat_manager=self._chat_manager,
+            sio=sio,
         )
 
     @staticmethod

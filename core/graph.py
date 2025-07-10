@@ -1,19 +1,37 @@
+from typing import Optional
+
 from langchain_aws import ChatBedrock
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate
 from langchain_neo4j import Neo4jGraph, GraphCypherQAChain
 from neo4j.exceptions import CypherSyntaxError
 
 from schemas import AgentGraphSubquery, AgentGraphRoute
+from server import SocketManager
 from .base import GraphNodesBase
 from .manager import ChatManager
 from .prompt import QA_PROMPT, CYPHER_PROMPT, SUBQUERIES_PROMPT, ROUTING_PROMPT, ASSISTANT_PROMPT
 
 
 class GraphAgent(GraphNodesBase):
-    def __init__(self, graph: Neo4jGraph, llm: ChatBedrock, chat_manager: ChatManager):
+    def __init__(
+        self,
+        graph: Neo4jGraph,
+        llm: ChatBedrock,
+        chat_manager: ChatManager,
+        sio: Optional[SocketManager] = None
+    ):
         self._chat_manager = chat_manager
         self._graph = graph
         self._llm = llm
+        self._sio = sio
+
+    async def _emit(self, event: str, data: dict) -> None:
+        """
+        Emit an event to the Socket.IO server.
+        :param event: The event name to emit.
+        :param data: The data to send with the event.
+        """
+        if self._sio: await self._sio.emit(event, data)
 
     async def search(self, state: dict) -> dict:
         """
@@ -22,6 +40,8 @@ class GraphAgent(GraphNodesBase):
         :return:
         """
         print(f"--SEARCHING GRAPH--")
+        information_text = 'Buscando relacionamentos em grafos...'
+        await self._emit("agent_updated", {"status": information_text})
         documents: list[dict] = state["documents"]
         subqueries: list[dict] = state["subqueries"]
         depth: int = state["depth"]
@@ -31,6 +51,7 @@ class GraphAgent(GraphNodesBase):
         # Search the graph using the LLM
         for query in subqueries:
             print(f"Processing query: {query}")
+            information_text += f"\n- Consultando: {query}"
             try:
                 cypher_chain = GraphCypherQAChain.from_llm(
                     self._llm,
@@ -44,8 +65,11 @@ class GraphAgent(GraphNodesBase):
                 )
                 document = await cypher_chain.ainvoke(query)
                 documents.append(document)
+                information_text += " **OK**"
             except CypherSyntaxError as e:
                 print(f"Cypher syntax error: {e}")
+                information_text += f"\n- Erro de sintaxe Cypher: {e}"
+            await self._emit("agent_updated", {"status": information_text})
         depth += 1
         return {"documents": documents, "depth": depth}
 
@@ -56,9 +80,16 @@ class GraphAgent(GraphNodesBase):
         :return:
         """
         print("--ROUTING--")
+        information_text = 'Roteando o estado para os nós apropriados...'
+        await self._emit("agent_updated", {"status": information_text})
         structured = self._llm.with_structured_output(AgentGraphRoute)
         route_chain = ROUTING_PROMPT | structured
         result: AgentGraphRoute = await route_chain.ainvoke(state) # type: ignore
+        await self._emit(
+            "agent_updated",
+             {"status": f"Roteamento concluído: {'Criar novas sub-consultas' 
+             if result.route == 'generate_subqueries' else 'Responder pergunta final'}"}
+        )
         return {"route": result.route}
 
     async def subqueries(self, state: dict) -> dict:
@@ -68,9 +99,12 @@ class GraphAgent(GraphNodesBase):
         :return:
         """
         print("--SUBQUERIES--")
+        information_text = 'Gerando sub-consultas...'
         structured = self._llm.with_structured_output(AgentGraphSubquery)
         subquery_chain = SUBQUERIES_PROMPT | structured
         result: AgentGraphSubquery = await subquery_chain.ainvoke(state) # type: ignore
+        information_text += f"\n- Sub-consultas geradas: {', '.join(result.subquestions)}"
+        await self._emit("agent_updated", {"status": information_text})
         return {"subqueries": result.subquestions}
 
     async def answer(self, state: dict) -> dict:

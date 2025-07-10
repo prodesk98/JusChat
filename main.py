@@ -66,7 +66,7 @@ async def invoke_agent(sid, data):
     if not question:
         return await sio.emit("error", {"message": "Question is required."}, room=sid)
 
-    agent = AgentGraphRAGBedRock(chat_id)
+    agent = AgentGraphRAGBedRock(chat_id, sio)
     response = await agent.invoke(question)
 
     return await sio.emit(

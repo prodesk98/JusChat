@@ -1,11 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Literal, TypedDict
-
+from typing import TypedDict
 from langchain_aws import ChatBedrock
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
-from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
 
-from config import env
 
 class LLMBase(ABC):
     @abstractmethod
@@ -22,7 +18,13 @@ class LLMBase(ABC):
 
 
 class LLMBedRockBase(LLMBase):
-    def __init__(self, model_id: str, region: str, aws_access_key_id: str, aws_secret_access_key: str):
+    def __init__(
+        self,
+        model_id: str,
+        region: str,
+        aws_access_key_id: str,
+        aws_secret_access_key: str,
+    ):
         self._model_id = model_id
         self._region = region
         self._aws_access_key_id = aws_access_key_id
