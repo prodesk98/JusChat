@@ -81,7 +81,7 @@ class AgentGraphRAGBedRock(LLMBedRockBase):
             self.route_status,
             {
                 "search_graph": "SearchGraph",
-                "search_vector": "SearchGraph", # TODO: Implement vector search
+                "search_vector": "SearchVector",
                 "answer_final": "Answer",
             }
         )

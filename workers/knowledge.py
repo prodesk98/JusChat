@@ -1,4 +1,8 @@
+import json
+import hashlib
+
 from typing import Optional
+from uuid import uuid4
 
 from langchain_community.document_loaders import S3FileLoader, AmazonTextractPDFLoader
 from langchain_core.messages import SystemMessage
@@ -12,14 +16,14 @@ from langchain_aws import ChatBedrock
 from langchain_neo4j import Neo4jGraph
 
 from config import env
+from schemas import LegalDocumentMetadata
+from vectordb import QdrantClientManager
 
 
-examples = [
+examples: list[dict[str, str]] = [
     {
-        "text": (
-            "Maria Silva é autora em um processo contra a Empresa XYZ "
-            "no Tribunal de Justiça de São Paulo."
-        ),
+        "text": "Maria Silva é autora em um processo contra a Empresa XYZ "
+                "no Tribunal de Justiça de São Paulo.",
         "head": "Maria Silva",
         "head_type": "Person",
         "relation": "PARTY_TO",
@@ -27,9 +31,7 @@ examples = [
         "tail_type": "Legal_Case",
     },
     {
-        "text": (
-            "A Empresa XYZ foi representada pelo escritório de advocacia Souza & Associados."
-        ),
+        "text": "A Empresa XYZ foi representada pelo escritório de advocacia Souza & Associados.",
         "head": "Souza & Associados",
         "head_type": "Organization",
         "relation": "REPRESENTS",
@@ -37,9 +39,7 @@ examples = [
         "tail_type": "Organization",
     },
     {
-        "text": (
-            "O processo está sendo julgado pelo Tribunal de Justiça de São Paulo."
-        ),
+        "text": "O processo está sendo julgado pelo Tribunal de Justiça de São Paulo.",
         "head": "Processo 1020304-55.2023.8.26.0100",
         "head_type": "Legal_Case",
         "relation": "HANDLED_BY",
@@ -47,9 +47,7 @@ examples = [
         "tail_type": "Court",
     },
     {
-        "text": (
-            "O Tribunal de Justiça de São Paulo está localizado na cidade de São Paulo."
-        ),
+        "text": "O Tribunal de Justiça de São Paulo está localizado na cidade de São Paulo.",
         "head": "Tribunal de Justiça de São Paulo",
         "head_type": "Court",
         "relation": "LOCATED_IN",
@@ -57,9 +55,7 @@ examples = [
         "tail_type": "Location",
     },
     {
-        "text": (
-            "A petição inicial do processo faz referência ao Artigo 927 do Código Civil."
-        ),
+        "text": "A petição inicial do processo faz referência ao Artigo 927 do Código Civil.",
         "head": "Petição Inicial",
         "head_type": "Legal_Document",
         "relation": "REFERS_TO",
@@ -67,9 +63,7 @@ examples = [
         "tail_type": "Law_Article",
     },
     {
-        "text": (
-            "A decisão judicial resultou em condenação por danos morais."
-        ),
+        "text": "A decisão judicial resultou em condenação por danos morais.",
         "head": "Decisão Judicial",
         "head_type": "Legal_Document",
         "relation": "RESULTS_IN",
@@ -77,9 +71,7 @@ examples = [
         "tail_type": "Penalty",
     },
     {
-        "text": (
-            "Foi interposto recurso de apelação pela Empresa XYZ."
-        ),
+        "text": "Foi interposto recurso de apelação pela Empresa XYZ.",
         "head": "Processo 1020304-55.2023.8.26.0100",
         "head_type": "Legal_Case",
         "relation": "HAS_ACTION",
@@ -87,9 +79,7 @@ examples = [
         "tail_type": "Appeal",
     },
     {
-        "text": (
-            "A audiência de instrução ocorreu no Fórum João Mendes."
-        ),
+        "text": "A audiência de instrução ocorreu no Fórum João Mendes.",
         "head": "Audiência de Instrução",
         "head_type": "Event",
         "relation": "HELD_ON",
@@ -97,9 +87,7 @@ examples = [
         "tail_type": "Location",
     },
     {
-        "text": (
-            "O laudo pericial foi incluído como prova no processo."
-        ),
+        "text": "O laudo pericial foi incluído como prova no processo.",
         "head": "Laudo Pericial",
         "head_type": "Evidence",
         "relation": "EVIDENCE_IN",
@@ -107,9 +95,7 @@ examples = [
         "tail_type": "Legal_Case",
     },
     {
-        "text": (
-            "O juiz Pedro Almeida decidiu o processo em favor de Maria Silva."
-        ),
+        "text": "O juiz Pedro Almeida decidiu o processo em favor de Maria Silva.",
         "head": "Pedro Almeida",
         "head_type": "Person",
         "relation": "DECIDED_BY",
@@ -118,7 +104,7 @@ examples = [
     },
 ]
 
-nodes = [
+nodes: list[str] = [
     "Person",
     "Organization",
     "Court",
@@ -136,7 +122,7 @@ nodes = [
     "Appeal",
 ]
 
-relationships = [
+relationships: list[str] = [
     "PARTY_TO",
     "REPRESENTS",
     "EMPLOYED_BY",
@@ -154,6 +140,51 @@ relationships = [
     "CITES",
 ]
 
+legal_document_metadata_keys: list[str] = [
+    # Document Identification
+    "title",
+    "type",
+    "case_number",
+    "document_number",
+    "creation_date",
+    "filing_date",
+    "signature_date",
+    "version",
+    "place_of_issue",
+
+    # Parties Involved
+    "plaintiffs",
+    "defendants",
+    "lawyers",
+    "bar_number",
+    "legal_representatives",
+    "judge_or_rapporteur",
+    "third_parties",
+
+    # Procedural Data
+    "court",
+    "jurisdiction",
+    "district",
+    "adjudicating_body",
+    "case_class",
+    "nature_of_action",
+    "main_subject",
+    "secondary_subjects",
+    "case_progress",
+    "case_stage",
+
+    # Legal Information
+    "legal_basis",
+    "jurisprudence",
+    "legal_thesis",
+    "claims",
+    "legal_reasoning",
+    "provisions",
+    "decision",
+    "case_value",
+    "attorney_fees",
+]
+
 class KnowledgeService:
     def __init__(self):
         self._splitter = CharacterTextSplitter.from_tiktoken_encoder(
@@ -163,7 +194,58 @@ class KnowledgeService:
         )
 
     @staticmethod
-    def _create_unstructured_prompt(
+    def calc_document_hash(contents: str) -> str:
+        """
+        Calculate a hash for the document contents.
+        :param contents: The document contents as bytes.
+        :return: A string representing the hash of the document.
+        """
+        return hashlib.sha256(contents.encode()).hexdigest()
+
+    @staticmethod
+    def get_document_id() -> str:
+        """
+        Generate a unique document ID based on the current timestamp.
+        :return: A string representing the document ID.
+        """
+        return uuid4().hex
+
+    @staticmethod
+    def _create_unstructured_extract_entities_prompt(
+        legal_keys: list[str],
+    ) -> ChatPromptTemplate:
+        """
+        Create a prompt template for extracting legal entities from unstructured text.
+        :param legal_keys: List of keys to extract from the legal document.
+        :return: A ChatPromptTemplate for extracting entities.
+        """
+        system_prompt = (
+            "You are a legal extraction assistant specialized in the Brazilian legal domain. "
+            "Your task is to extract structured legal information from text in order to build "
+            "a Brazilian legal knowledge graph. Identify legal entities strictly following the user prompt. "
+            "You must produce output in JSON format, containing a single JSON object with the keys: "
+            f"{', '.join(legal_keys)}. Use only the explicit information in the text. "
+            "If something is missing, leave it empty or null. Do not guess or hallucinate. Extract precisely."
+        )
+
+        system_message = SystemMessage(content=system_prompt)
+        parser = JsonOutputParser(pydantic_object=LegalDocumentMetadata)
+
+        human_prompt = PromptTemplate(
+            template="Extract the following legal entities from the provided text:\n{text}",
+            input_variables=["text"],
+            partial_variables={"format_instructions": parser.get_format_instructions()},
+        )
+
+        human_message_prompt = HumanMessagePromptTemplate(prompt=human_prompt)
+
+        chat_prompt = ChatPromptTemplate.from_messages(
+            [system_message, human_message_prompt]
+        )
+        return chat_prompt
+
+    @staticmethod
+    def _create_unstructured_relationships_prompt(
         node_labels: Optional[list[str]] = None,
         rel_types: Optional[list[str] | list[tuple[str, str, str]]] = None,
         relationship_type: Optional[str] = None,
@@ -277,7 +359,8 @@ class KnowledgeService:
         # Split the document into smaller chunks
         texts = self._splitter.split_text(contents)
         # Create Document objects from the split texts
-        documents = [Document(page_content=text, source=key.split('/')[-1]) for text in texts]
+        source = key.split('/')[-1]
+        documents = [Document(page_content=text, source=source) for text in texts]
         print(f"{len(documents)} Chunks created from {key}.")
 
         # Convert the documents to graph documents using LLMGraphTransformer
@@ -292,7 +375,7 @@ class KnowledgeService:
             llm,
             allowed_nodes=nodes,
             allowed_relationships=relationships,
-            prompt= self._create_unstructured_prompt(
+            prompt=self._create_unstructured_relationships_prompt(
                 node_labels=nodes,
                 rel_types=relationships,
             )
@@ -305,6 +388,41 @@ class KnowledgeService:
         # Refresh the schema to ensure the new documents are indexed
         graph.refresh_schema()
 
-        # TODO: Implement vector database update logic here
+        # Calculate the document hash
+        document_hash = self.calc_document_hash(contents)
+        document_id = self.get_document_id()
+        # Update the metadata with the extracted information
+        metadatas = {
+            "document_id": document_id,
+            "document_hash": document_hash,
+            "source": source,
+        }
+        # Extract metadata from the document using the LLM
+        extract_entities_prompt = self._create_unstructured_extract_entities_prompt(legal_document_metadata_keys)
+        metadata_extraction_chain = extract_entities_prompt | llm
+        # Iterate over the texts and extract metadata
+        for text in texts:
+            # Extract metadata from the document
+            metadata_extraction_result = metadata_extraction_chain.invoke({"text": text})
+            # Parse the metadata extraction result
+            metadata: dict = json.loads(metadata_extraction_result.content)
+            for k in metadata.keys():
+                if k not in list(metadatas.keys()) and metadata[k] is not None: metadatas[k] = metadata[k]
 
+        # Add the document to the vector database
+        vectordb = QdrantClientManager()
+        documents = [
+            Document(
+                id=document_id,
+                page_content=doc.page_content,
+                metadata={
+                    "document_hash": document_hash,
+                    "source": source,
+                    **metadatas,
+                }
+            ) for doc in documents
+        ]
+        # Add the documents to the vector database
+        vectordb.add_document(documents=documents)
+        # Log the update
         print(f"Knowledge base updated with {len(graph_documents)} documents from {key}.")
