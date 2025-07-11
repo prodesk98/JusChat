@@ -411,6 +411,7 @@ class KnowledgeService:
 
         # Add the document to the vector database
         vectordb = QdrantClientManager()
+        # Build the Document objects with the metadata
         documents = [
             Document(
                 id=document_id,
