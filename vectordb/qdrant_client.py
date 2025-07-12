@@ -1,17 +1,37 @@
 from typing import Optional
 
+from langchain_aws import BedrockEmbeddings
 from langchain_core.documents import Document
 from langchain_qdrant import QdrantVectorStore
-from qdrant_client import QdrantClient
-from qdrant_client.http.models import Distance, VectorParams, Filter
-from ._embedding import embeddings
+from qdrant_client import QdrantClient, models
 from .base import VectorDBManagerBase
 from config import env
 
+COLLECTION_NAME = "documents"
+
+embeddings = BedrockEmbeddings(
+    model_id=env.BEDROCK_EMBEDDING_MODEL_ID,
+    region_name=env.AWS_REGION,
+    aws_access_key_id=env.AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=env.AWS_SECRET_ACCESS_KEY,
+)
+
+try:
+    QdrantClient(
+        url=env.QDRANT_URL,
+        api_key=env.QDRANT_API_KEY,
+        prefer_grpc=True,
+    ).create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(
+            size=1024,                          # Bedrock embedding size
+            distance=models.Distance.COSINE,    # Distance metric
+        ),
+    )
+except Exception: # noqa
+    pass
 
 class QdrantClientManager(VectorDBManagerBase):
-    COLLECTION_NAME = "documents"
-
     def __init__(self):
         self._client = QdrantClient(
             url=env.QDRANT_URL,
@@ -26,26 +46,20 @@ class QdrantClientManager(VectorDBManagerBase):
         Initializes the Qdrant client with the necessary parameters.
         This method is called during the instantiation of the class.
         """
-        self._client.create_collection(
-            collection_name=self.COLLECTION_NAME,
-            vectors_config=VectorParams(
-                size=1024,                  # Bedrock embedding size
-                distance=Distance.COSINE,   # Distance metric
-            ),
-        )
+        QdrantVectorStore.from_existing_collection(COLLECTION_NAME)
         self._client_vector_store = QdrantVectorStore(
             client=self._client,
-            collection_name=self.COLLECTION_NAME,
+            collection_name=COLLECTION_NAME,
             embedding=embeddings,
         )
 
-    def search(self, query: str, k: int = 10, filters: Optional[Filter] = None) -> list:
+    def search(self, query: str, k: int = 10, filters: Optional[models.Filter] = None) -> list:
         return self._client_vector_store.similarity_search(query, k=k, filter=filters)
 
     def add_document(self, documents: list[Document]) -> None:
         self._client_vector_store.add_documents(documents)
 
-    async def asearch(self, query: str, k: int = 10, filters: Optional[Filter] = None) -> list:
+    async def asearch(self, query: str, k: int = 10, filters: Optional[models.Filter] = None) -> list:
         """
         Asynchronous search method to find similar vectors.
         :param query: The query vector or text to search for.
@@ -63,11 +77,3 @@ class QdrantClientManager(VectorDBManagerBase):
         :return: QdrantVectorStore instance.
         """
         return self._client_vector_store
-
-    @property
-    def collection_name(self) -> str:
-        """
-        Returns the name of the collection.
-        :return:
-        """
-        return self.COLLECTION_NAME

@@ -1,4 +1,9 @@
 import os
+import tempfile
+from uuid import uuid4
+
+from services import S3Client
+from botocore.exceptions import ClientError
 
 from fastapi import FastAPI, Depends, Request
 from starlette.staticfiles import StaticFiles
@@ -8,8 +13,10 @@ from schemas import (
     KnowledgeUploadSchema, KnowledgeUpdateResponse,
     AgentGraphRAGRequest, AgentGraphRAGResponse,
 )
+
 from core import AgentGraphRAGBedRock, ChatManager
 from server import SocketManager
+from workers import aupload_knowledge_base
 
 app = FastAPI(
     title="Chat GraphRAG API",
@@ -104,20 +111,38 @@ async def update_knowledge(upload: KnowledgeUploadSchema = Depends(KnowledgeUplo
     :param upload: The uploaded files containing the knowledge base document.
     :return: A confirmation message.
     """
-    from workers import aupload_knowledge_base
     if len(upload.files) == 0:
         return KnowledgeUpdateResponse(
             success=False,
             message="No files uploaded."
         )
     job_ids: list[str] = []
+    s3_client = S3Client()
     for file in upload.files:
         if not file.filename.endswith(('.pdf', '.txt', '.md')):
             return KnowledgeUpdateResponse(
                 success=False,
                 message="Unsupported file type. Only PDF, TXT, and MD files are allowed."
             )
-        job_id = await aupload_knowledge_base(key=file.filename)
+        ext = file.filename.split('.')[-1]
+        key = f"knowledge/{file.filename}-{str(uuid4())}.{ext}"
+        try:
+            temp = tempfile.NamedTemporaryFile(delete=False)
+            with open(temp.name, 'wb') as f:
+                f.write(file.file.read())
+            s3_client.upload_file(temp.name, key)
+            os.remove(temp.name)
+        except ClientError as e:
+            return KnowledgeUpdateResponse(
+                success=False,
+                message=f"Failed to upload file to S3: {e}"
+            )
+        except FileNotFoundError as e:
+            return KnowledgeUpdateResponse(
+                success=False,
+                message=f"File not found: {e}"
+            )
+        job_id = await aupload_knowledge_base(key=key)
         job_ids.append(job_id)
     return KnowledgeUpdateResponse(
         success=True,

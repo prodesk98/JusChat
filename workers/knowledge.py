@@ -1,4 +1,3 @@
-import json
 import hashlib
 
 from typing import Optional
@@ -16,7 +15,9 @@ from langchain_aws import ChatBedrock
 from langchain_neo4j import Neo4jGraph
 
 from config import env
+from core.prompt import EXTRACT_ENTITIES_PROMPT
 from schemas import LegalDocumentMetadata
+from services import S3Client
 from vectordb import QdrantClientManager
 
 
@@ -211,40 +212,6 @@ class KnowledgeService:
         return uuid4().hex
 
     @staticmethod
-    def _create_unstructured_extract_entities_prompt(
-        legal_keys: list[str],
-    ) -> ChatPromptTemplate:
-        """
-        Create a prompt template for extracting legal entities from unstructured text.
-        :param legal_keys: List of keys to extract from the legal document.
-        :return: A ChatPromptTemplate for extracting entities.
-        """
-        system_prompt = (
-            "You are a legal extraction assistant specialized in the Brazilian legal domain. "
-            "Your task is to extract structured legal information from text in order to build "
-            "a Brazilian legal knowledge graph. Identify legal entities strictly following the user prompt. "
-            "You must produce output in JSON format, containing a single JSON object with the keys: "
-            f"{', '.join(legal_keys)}. Use only the explicit information in the text. "
-            "If something is missing, leave it empty or null. Do not guess or hallucinate. Extract precisely."
-        )
-
-        system_message = SystemMessage(content=system_prompt)
-        parser = JsonOutputParser(pydantic_object=LegalDocumentMetadata)
-
-        human_prompt = PromptTemplate(
-            template="Extract the following legal entities from the provided text:\n{text}",
-            input_variables=["text"],
-            partial_variables={"format_instructions": parser.get_format_instructions()},
-        )
-
-        human_message_prompt = HumanMessagePromptTemplate(prompt=human_prompt)
-
-        chat_prompt = ChatPromptTemplate.from_messages(
-            [system_message, human_message_prompt]
-        )
-        return chat_prompt
-
-    @staticmethod
     def _create_unstructured_relationships_prompt(
         node_labels: Optional[list[str]] = None,
         rel_types: Optional[list[str] | list[tuple[str, str, str]]] = None,
@@ -348,9 +315,9 @@ class KnowledgeService:
             return "\n".join([page.page_content for page in loader.load()])
         raise RuntimeError(f"Unsupported file type: {_ext}")
 
-    def update(self, key: str):
+    def process(self, key: str):
         """
-        Update the knowledge base with the given S3 object ID.
+        Process a document from S3, split it into chunks, and add it to the knowledge base.
         :param key:
         :return:
         """
@@ -398,20 +365,24 @@ class KnowledgeService:
             "source": source,
         }
         # Extract metadata from the document using the LLM
-        extract_entities_prompt = self._create_unstructured_extract_entities_prompt(legal_document_metadata_keys)
-        metadata_extraction_chain = extract_entities_prompt | llm
+        structured = llm.with_structured_output(LegalDocumentMetadata)
+        chain_legal_document = EXTRACT_ENTITIES_PROMPT | structured
         # Iterate over the texts and extract metadata
         for text in texts:
             # Extract metadata from the document
-            metadata_extraction_result = metadata_extraction_chain.invoke({"text": text})
+            metadata_extraction_result: LegalDocumentMetadata = chain_legal_document.invoke( # type: ignore
+                {"entities": ", ".join(legal_document_metadata_keys), "text": text})
+            print(metadata_extraction_result)
             # Parse the metadata extraction result
-            metadata: dict = json.loads(metadata_extraction_result.content)
+            metadata: dict = metadata_extraction_result.model_dump(exclude_none=True)
             for k in metadata.keys():
-                if k not in list(metadatas.keys()) and metadata[k] is not None: metadatas[k] = metadata[k]
+                if k not in list(metadatas.keys()): metadatas[k] = metadata[k]
 
+        print(metadatas)
         # Add the document to the vector database
         vectordb = QdrantClientManager()
         # Build the Document objects with the metadata
+        # TODO: fix bug: 'embedding' cannot be None when retrieval mode is 'dense'
         documents = [
             Document(
                 id=document_id,
@@ -425,5 +396,7 @@ class KnowledgeService:
         ]
         # Add the documents to the vector database
         vectordb.add_document(documents=documents)
+        # Delete object from S3
+        S3Client().delete_object(key)
         # Log the update
         print(f"Knowledge base updated with {len(graph_documents)} documents from {key}.")

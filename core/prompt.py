@@ -1,5 +1,6 @@
 from langchain.prompts import PromptTemplate
 
+
 ROUTING_CONSTANTS = {
     "search_graph": "Consultando os relacionamentos do grafo",
     "search_vector": "Consultando o contexto semântico",
@@ -123,4 +124,19 @@ Caso o contexto esteja vazio ou não contenha detalhes suficientes, informe educ
 Informações disponíveis:
 {context}""",
     input_variables=["context"],
+)
+
+EXTRACT_ENTITIES_PROMPT = PromptTemplate(
+    template="""You are a legal extraction assistant specialized in the Brazilian legal domain. 
+Your task is to extract structured legal information from text in order to build a Brazilian legal knowledge graph. 
+Identify legal entities strictly following the user prompt. 
+
+You must produce output in JSON format, containing a single JSON object with the keys: 
+If something is missing, leave it empty or null. Do not guess or hallucinate. Extract precisely.
+{entities}. Use only the explicit information in the text.
+
+Extract the following legal entities from the provided text:
+{text}
+""",
+    input_variables=["entities", "text"],
 )

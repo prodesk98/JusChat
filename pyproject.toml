@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "amazon-textract-caller>=0.2.4",
     "amazon-textract-textractor>=1.9.2",
+    "boto3>=1.39.3",
     "celery[sqs]>=5.5.3",
     "fastapi[standard]>=0.115.14",
     "langchain>=0.3.26",
