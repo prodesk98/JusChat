@@ -33,7 +33,7 @@ except Exception: # noqa
 
 class QdrantClientManager(VectorDBManagerBase):
     def __init__(self):
-        self._client = QdrantVectorStore.from_existing_collection(
+        self._vectorstore = QdrantVectorStore.from_existing_collection(
             url=env.QDRANT_URL,
             api_key=env.QDRANT_API_KEY,
             prefer_grpc=True,
@@ -42,10 +42,10 @@ class QdrantClientManager(VectorDBManagerBase):
         )
 
     def search(self, query: str, k: int = 10, filters: Optional[models.Filter] = None) -> list:
-        return self._client.similarity_search(query, k=k, filter=filters)
+        return self._vectorstore.similarity_search(query, k=k, filter=filters)
 
     def add_document(self, documents: list[Document]) -> None:
-        self._client.add_documents(documents)
+        self._vectorstore.add_documents(documents)
 
     async def asearch(self, query: str, k: int = 10, filters: Optional[models.Filter] = None) -> list:
         """
@@ -55,13 +55,13 @@ class QdrantClientManager(VectorDBManagerBase):
         :param filters: Optional filters to apply to the search.
         :return: A list of metadata associated with the found vectors.
         """
-        return await self._client.asimilarity_search(query, k=k, filter=filters)
+        return await self._vectorstore.asimilarity_search(query, k=k, filter=filters)
 
     @property
-    def client(self) -> QdrantVectorStore:
+    def vectorstore(self) -> QdrantVectorStore:
         """
         Returns the Qdrant client instance.
         If the client is not initialized, it will be created.
         :return: QdrantVectorStore instance.
         """
-        return self._client
+        return self._vectorstore

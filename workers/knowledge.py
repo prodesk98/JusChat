@@ -18,7 +18,7 @@ from config import env
 from core.prompt import EXTRACT_ENTITIES_PROMPT
 from schemas import LegalDocumentMetadata
 from services import S3Client
-from vectordb import QdrantClientManager
+from vectorstore import QdrantClientManager
 
 
 examples: list[dict[str, str]] = [
