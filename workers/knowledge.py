@@ -382,7 +382,6 @@ class KnowledgeService:
         # Add the document to the vector database
         vectordb = QdrantClientManager()
         # Build the Document objects with the metadata
-        # TODO: fix bug: 'embedding' cannot be None when retrieval mode is 'dense'
         documents = [
             Document(
                 id=document_id,
