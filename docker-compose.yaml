@@ -50,6 +50,7 @@ services:
       - .env
     environment:
       NEO4J_URL: bolt://neo4j:7687
+      QDRANT_URL: http://qdrant:6333
       MONGO_URI: mongodb://root:pwd@mongo:27017/?authSource=admin
     ports:
       - "8000:8000"

@@ -41,13 +41,13 @@ class QdrantClientManager(VectorDBManagerBase):
             embedding=embeddings,
         )
 
-    def search(self, query: str, k: int = 10, filters: Optional[models.Filter] = None) -> list:
+    def search(self, query: str, k: int = 10, filters: Optional[models.Filter] = None) -> list[Document]:
         return self._vectorstore.similarity_search(query, k=k, filter=filters)
 
     def add_documents(self, documents: list[Document]) -> None:
         self._vectorstore.add_documents(documents)
 
-    async def asearch(self, query: str, k: int = 10, filters: Optional[models.Filter] = None) -> list:
+    async def asearch(self, query: str, k: int = 10, filters: Optional[models.Filter] = None) -> list[Document]:
         """
         Asynchronous search method to find similar vectors.
         :param query: The query vector or text to search for.

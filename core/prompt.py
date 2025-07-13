@@ -120,6 +120,7 @@ ASSISTANT_PROMPT = PromptTemplate(
     template="""Você é um assistente jurídico responsável por fornecer respostas claras, objetivas e fundamentadas a perguntas legais.
 Utilize exclusivamente as informações do contexto fornecido para elaborar sua resposta.
 Caso o contexto esteja vazio ou não contenha detalhes suficientes, informe educadamente que não há informações suficientes para responder à pergunta.
+Caso houver as fontes utilizadas, informe-as ao final da resposta.
 
 Informações disponíveis:
 {context}""",

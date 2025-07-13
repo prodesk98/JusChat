@@ -6,6 +6,7 @@ from langgraph.constants import START, END
 from langgraph.graph import StateGraph
 
 from server import SocketManager
+from vectorstore import QdrantClientManager
 from .base import LLMBedRockBase, GraphState
 from .graph import GraphAgent
 from .manager import ChatManager
@@ -35,8 +36,10 @@ class AgentGraphRAGBedRock(LLMBedRockBase):
             username=env.NEO4J_USERNAME,
             password=env.NEO4J_PASSWORD,
         )
+        self._vectorstore = QdrantClientManager()
         self._agent = GraphAgent(
             graph=self._graph,
+            vectorstore=self._vectorstore,
             llm=self._llm,
             chat_manager=self._chat_manager,
             sio=sio,
