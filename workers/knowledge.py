@@ -327,7 +327,7 @@ class KnowledgeService:
         texts = self._splitter.split_text(contents)
         # Create Document objects from the split texts
         source = key.split('/')[-1]
-        documents = [Document(page_content=text, source=source) for text in texts]
+        documents = [Document(id=uuid4().hex, page_content=text, source=source) for text in texts]
         print(f"{len(documents)} Chunks created from {key}.")
 
         # Convert the documents to graph documents using LLMGraphTransformer
@@ -359,7 +359,7 @@ class KnowledgeService:
         document_hash = self.calc_document_hash(contents)
         document_id = self.get_document_id()
         # Update the metadata with the extracted information
-        metadatas = {
+        metadatas: dict[str, list[str]|str] = {
             "document_id": document_id,
             "document_hash": document_hash,
             "source": source,
@@ -372,30 +372,32 @@ class KnowledgeService:
             # Extract metadata from the document
             metadata_extraction_result: LegalDocumentMetadata = chain_legal_document.invoke( # type: ignore
                 {"entities": ", ".join(legal_document_metadata_keys), "text": text})
-            print(metadata_extraction_result)
             # Parse the metadata extraction result
             metadata: dict = metadata_extraction_result.model_dump(exclude_none=True)
             for k in metadata.keys():
-                if k not in list(metadatas.keys()): metadatas[k] = metadata[k]
+                if k in ['document_id', 'document_hash', 'source']: continue
+                if k in list(metadatas.keys()):
+                    if isinstance(metadatas[k], list):
+                        metadatas[k].extend(metadata[k])
+                        continue
+                    if isinstance(metadatas[k], str):
+                        metadatas[k] += "\n" + metadata[k]
+                else:
+                    metadatas[k] = metadata[k]
 
-        print(metadatas)
         # Add the document to the vector database
-        vectordb = QdrantClientManager()
+        vectorstore = QdrantClientManager()
         # Build the Document objects with the metadata
         documents = [
             Document(
-                id=document_id,
+                id=doc.id,
                 page_content=doc.page_content,
-                metadata={
-                    "document_hash": document_hash,
-                    "source": source,
-                    **metadatas,
-                }
+                metadata=metadatas
             ) for doc in documents
         ]
         # Add the documents to the vector database
-        vectordb.add_document(documents=documents)
+        vectorstore.add_documents(documents=documents)
         # Delete object from S3
         S3Client().delete_object(key)
         # Log the update
-        print(f"Knowledge base updated with {len(graph_documents)} documents from {key}.")
+        print(f"Knowledge base updated with {len(documents)} documents from {key}.")

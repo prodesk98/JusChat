@@ -18,9 +18,9 @@ class VectorDBManagerBase(ABC):
         pass
 
     @abstractmethod
-    def add_document(self, documents: list[Document]) -> None:
+    def add_documents(self, documents: list[Document]) -> None:
         """
-        Add a document to the database.
+        Add a list of Document objects to the vector store.
         :param documents: A list of Document objects to add.
         :return: None
         """

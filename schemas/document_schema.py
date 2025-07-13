@@ -1,4 +1,3 @@
-from datetime import date
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -10,9 +9,9 @@ class LegalDocumentMetadata(BaseModel):
     type: Optional[str] = Field(None, description="Type of the legal document")
     case_number: Optional[str] = Field(None, description="Official case number")
     document_number: Optional[str] = Field(None, description="Internal document number")
-    creation_date: Optional[date] = Field(None, description="Date when the document was created")
-    filing_date: Optional[date] = Field(None, description="Date when the document was filed")
-    signature_date: Optional[date] = Field(None, description="Date when the document was signed")
+    creation_date: Optional[str] = Field(None, description="Date when the document was created")
+    filing_date: Optional[str] = Field(None, description="Date when the document was filed")
+    signature_date: Optional[str] = Field(None, description="Date when the document was signed")
     version: Optional[str] = Field(None, description="Version or revision of the document")
     place_of_issue: Optional[str] = Field(None, description="Place where the document was issued")
 
@@ -45,5 +44,5 @@ class LegalDocumentMetadata(BaseModel):
     legal_reasoning: Optional[str] = Field(None, description="Legal reasoning or justification")
     provisions: Optional[list[str]] = Field(None, description="Provisions applied")
     decision: Optional[str] = Field(None, description="Decision content")
-    case_value: Optional[float] = Field(None, description="Value attributed to the case")
-    attorney_fees: Optional[float] = Field(None, description="Agreed or court-appointed attorney fees")
+    case_value: Optional[str] = Field(None, description="Value attributed to the case")
+    attorney_fees: Optional[str] = Field(None, description="Agreed or court-appointed attorney fees")

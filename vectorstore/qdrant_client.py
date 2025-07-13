@@ -44,7 +44,7 @@ class QdrantClientManager(VectorDBManagerBase):
     def search(self, query: str, k: int = 10, filters: Optional[models.Filter] = None) -> list:
         return self._vectorstore.similarity_search(query, k=k, filter=filters)
 
-    def add_document(self, documents: list[Document]) -> None:
+    def add_documents(self, documents: list[Document]) -> None:
         self._vectorstore.add_documents(documents)
 
     async def asearch(self, query: str, k: int = 10, filters: Optional[models.Filter] = None) -> list:
