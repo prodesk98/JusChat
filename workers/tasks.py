@@ -1,26 +1,15 @@
 import asyncio
-
+from .knowledge import KnowledgeService
 from .connection import app
 
 
-@app.task(
-    name="knowledge.upload_knowledge_base",
-    bind=True,
-    autoretry_for=(Exception,),
-    max_retries=3,
-    countdown=60,
-)
-def _upload_knowledge_base(self, key: str):
+@app.task(name="knowledge.upload_knowledge_base")
+def _upload_knowledge_base(key: str):
     """
-    Update the knowledge base with the given ID.
+    Synchronous task to update the knowledge base with the given S3 object ID.
     """
-    from .knowledge import KnowledgeService
-    try:
-        service = KnowledgeService()
-        service.update(key)
-    except Exception as e:
-        self.retry(exc=e)
-
+    service = KnowledgeService()
+    service.process(key)
 
 
 async def aupload_knowledge_base(key: str) -> str:

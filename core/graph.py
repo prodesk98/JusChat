@@ -7,6 +7,7 @@ from neo4j.exceptions import CypherSyntaxError
 
 from schemas import AgentGraphSubquery, AgentGraphRoute, AgentGraphStart
 from server import SocketManager
+from vectorstore import QdrantClientManager
 from .base import GraphNodesBase
 from .manager import ChatManager
 from .prompt import (
@@ -24,12 +25,14 @@ class GraphAgent(GraphNodesBase):
     def __init__(
         self,
         graph: Neo4jGraph,
+        vectorstore: QdrantClientManager,
         llm: ChatBedrock,
         chat_manager: ChatManager,
         sio: Optional[SocketManager] = None
     ):
         self._chat_manager = chat_manager
         self._graph = graph
+        self._vectorstore = vectorstore
         self._llm = llm
         self._sio = sio
 
@@ -60,10 +63,34 @@ class GraphAgent(GraphNodesBase):
         :param state:
         :return:
         """
-        # TODO: Implement the vector search logic
         print("--SEARCHING VECTOR--")
         depth: int = state["depth"]
         depth += 1
+        information_text = 'Buscando vetores no banco de dados...'
+        await self._emit("agent_updated", {"status": information_text})
+        documents: list[dict] = state["documents"]
+        for q in state["subqueries"]:
+            print(f"Processing query: {q}")
+            information_text += f"\n- Consultando: {q}"
+            try:
+                result = await self._vectorstore.asearch(
+                    query=q,
+                    k=10,
+                    filters=None, # TODO: Implement filters if needed
+                )
+                documents.extend([
+                    {
+                        "query": q,
+                        "content": doc.page_content,
+                        "source": doc.metadata['source']
+                    }
+                    for doc in result
+                ])
+                information_text += " **OK**"
+            except Exception as e:
+                print(f"Error during vector search: {e}")
+                information_text += f"\n- Erro ao buscar vetores: {e}"
+            await self._emit("agent_updated", {"status": information_text})
         return {"documents": state["documents"], "depth": depth}
 
     async def search_graph(self, state: dict) -> dict:
@@ -76,15 +103,14 @@ class GraphAgent(GraphNodesBase):
         information_text = 'Buscando relacionamentos em grafos...'
         await self._emit("agent_updated", {"status": information_text})
         documents: list[dict] = state["documents"]
-        subqueries: list[dict] = state["subqueries"]
         depth: int = state["depth"]
         cypher_prompt_copy = CYPHER_PROMPT.model_copy()
         cypher_prompt_copy.template = cypher_prompt_copy.template.replace(
             "{{chat_history}}", await self._chat_manager.get_history_as_string())
         # Search the graph using the LLM
-        for query in subqueries:
-            print(f"Processing query: {query}")
-            information_text += f"\n- Consultando: {query}"
+        for q in state["subqueries"]:
+            print(f"Processing query: {q}")
+            information_text += f"\n- Consultando: {q}"
             try:
                 cypher_chain = GraphCypherQAChain.from_llm(
                     self._llm,
@@ -96,7 +122,7 @@ class GraphAgent(GraphNodesBase):
                     allow_dangerous_requests=True,
                     validate_cypher=True,
                 )
-                document = await cypher_chain.ainvoke(query)
+                document = await cypher_chain.ainvoke(q)
                 documents.append(document)
                 information_text += " **OK**"
             except CypherSyntaxError as e:

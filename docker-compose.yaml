@@ -10,6 +10,14 @@ services:
     volumes:
       - neo4j-data:/data
 
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333" # HTTP API
+      - "6334:6334" # gRPC API
+    volumes:
+      - qdrant-data:/qdrant/storage
+
   mongo:
     image: mongo:latest
     environment:
@@ -29,6 +37,7 @@ services:
       - .env
     environment:
       NEO4J_URL: bolt://neo4j:7687
+      QDRANT_URL: http://qdrant:6333
     command: celery -A workers.tasks worker --loglevel=INFO
     volumes:
       - ./:/app
@@ -41,6 +50,7 @@ services:
       - .env
     environment:
       NEO4J_URL: bolt://neo4j:7687
+      QDRANT_URL: http://qdrant:6333
       MONGO_URI: mongodb://root:pwd@mongo:27017/?authSource=admin
     ports:
       - "8000:8000"
@@ -51,3 +61,4 @@ services:
 volumes:
   neo4j-data:
   mongodb-data:
+  qdrant-data:

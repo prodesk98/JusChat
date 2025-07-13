@@ -24,8 +24,15 @@ class Environment(BaseSettings):
     NEO4J_USERNAME: Optional[str] = Field(default=os.getenv("NEO4J_USERNAME"))
     NEO4J_PASSWORD: Optional[str] = Field(default=os.getenv("NEO4J_PASSWORD"))
     # Bedrock
+    ## Generative Model
     BEDROCK_MODEL_ID: Optional[str] = Field(
         default=os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-3-5-sonnet-20240620-v1:0"))
+    ## Embedding Model
+    BEDROCK_EMBEDDING_MODEL_ID: Optional[str] = Field(
+        default=os.getenv("BEDROCK_EMBEDDING_MODEL_ID", "amazon.titan-embed-text-v2:0"))
     # MongoDB
     MONGO_URI: Optional[str] = Field(default=os.getenv("MONGO_URI", "mongodb://root:pwd@127.0.0.1:27017?authSource=admin"))
     MONGO_DB_NAME: Optional[str] = Field(default=os.getenv("MONGO_DB_NAME", "db0"))
+    # QDrant
+    QDRANT_URL: Optional[str] = Field(default=os.getenv("QDRANT_URL", "http://localhost:6333"))
+    QDRANT_API_KEY: Optional[str] = Field(default=os.getenv("QDRANT_API_KEY"))
