@@ -41,6 +41,10 @@ services:
     command: celery -A workers.tasks worker --loglevel=INFO
     volumes:
       - ./:/app
+    depends_on:
+      - mongo
+      - neo4j
+      - qdrant
 
   app:
     build:
@@ -57,6 +61,8 @@ services:
     command: fastapi dev main.py --host 0.0.0.0 --port 8000
     volumes:
       - ./:/app
+    depends_on:
+      - worker
 
 volumes:
   neo4j-data:
