@@ -3,8 +3,8 @@ from celery import Celery
 
 broker_transport_options = {
     'region': env.AWS_REGION,
-    'visibility_timeout': 3600,  # 1 hour
-    'polling_interval': 5,  # seconds
+    'visibility_timeout': 3600,     # 1 hour
+    'polling_interval': 5,          # seconds
     'predefined_queues': {
         'default': {
             'url': env.SQS_DEFAULT_QUEUE_URL,
