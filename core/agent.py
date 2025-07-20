@@ -89,7 +89,7 @@ class AgentGraphRAGBedRock(LLMBedRockBase):
             }
         )
         # Compile the workflow
-        app = workflow.compile()
+        workflow_graph = workflow.compile()
         # Run the workflow
         __initial_state = {
             "question": question,
@@ -99,5 +99,5 @@ class AgentGraphRAGBedRock(LLMBedRockBase):
             "depth": 0,
             "answer": ""
         }
-        result = await app.ainvoke(__initial_state) # type: ignore
+        result = await workflow_graph.ainvoke(__initial_state) # type: ignore
         return result["answer"]
