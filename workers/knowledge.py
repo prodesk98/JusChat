@@ -338,6 +338,7 @@ class KnowledgeService:
             aws_access_key_id=env.AWS_ACCESS_KEY_ID,
             aws_secret_access_key=env.AWS_SECRET_ACCESS_KEY,
         )
+        # Create the LLMGraphTransformer with the allowed nodes and relationships
         llm_graph = LLMGraphTransformer(
             llm,
             allowed_nodes=nodes,
